@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Шифр Цезаря</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      .input-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      textarea {
+        height: 100px;
+        resize: vertical;
+      }
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      button {
+        flex: 1;
+        padding: 12px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #d02d05;
+      }
+      .result {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #4caf50;
+        margin-top: 10px;
+        word-break: break-all;
+      }
+      .brute-force {
+        margin-top: 30px;
+        border-top: 2px solid #eee;
+        padding-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 Шифр Цезаря</h1>
+
+      <div class="input-group">
+        <label for="shift">Сдвиг:</label>
+        <input type="number" id="shift" value="3" min="1" max="33" />
+      </div>
+
+      <div class="input-group">
+        <label for="text">Текст:</label>
+        <textarea id="text" placeholder="Введите текст для шифрования...">
+Hello World! Привет, Мир!</textarea
+        >
+      </div>
+
+      <div class="button-group">
+        <button onclick="encryptText()">Зашифровать</button>
+        <button onclick="decryptText()">Расшифровать</button>
+      </div>
+
+      <div class="input-group">
+        <label>Результат:</label>
+        <div id="result" class="result"></div>
+      </div>
+
+      <div class="brute-force">
+        <h3>Взлом шифра :</h3>
+        <div class="input-group">
+          <label for="encryptedText">Зашифрованный текст:</label>
+          <textarea
+            id="encryptedText"
+            placeholder="Введите зашифрованный текст..."
+          ></textarea>
+        </div>
+        <div class="input-group">
+          <label for="language">Алфавит:</label>
+          <select id="language">
+            <option value="ru">Русский (33 буквы)</option>
+            <option value="en">Английский (26 букв)</option>
+          </select>
+        </div>
+        <button onclick="bruteForce()">Взломать</button>
+        <div id="bruteResult" class="result"></div>
+      </div>
+    </div>
+
+    <script>
+      class CaesarCipher {
+        constructor(shift = 3) {
+          this.shift = shift;
+          this.ruAlphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+          this.enAlphabet = "abcdefghijklmnopqrstuvwxyz";
+        }
+
+        _getAlphabet(char) {
+          const lowerChar = char.toLowerCase();
+          if (this.ruAlphabet.includes(lowerChar)) {
+            return {
+              alphabet: this.ruAlphabet,
+              isUpperCase:
+                char === char.toUpperCase() && char !== char.toLowerCase(),
+            };
+          } else if (this.enAlphabet.includes(lowerChar)) {
+            return {
+              alphabet: this.enAlphabet,
+              isUpperCase:
+                char === char.toUpperCase() && char !== char.toLowerCase(),
+            };
+          }
+          return null;
+        }
+
+        _encryptChar(char) {
+          const alphabetInfo = this._getAlphabet(char);
+
+          if (!alphabetInfo) {
+            return char;
+          }
+
+          const { alphabet, isUpperCase } = alphabetInfo;
+          const lowerChar = char.toLowerCase();
+          const index = alphabet.indexOf(lowerChar);
+          const newIndex = (index + this.shift) % alphabet.length;
+          const encryptedChar = alphabet[newIndex];
+
+          return isUpperCase ? encryptedChar.toUpperCase() : encryptedChar;
+        }
+
+        _decryptChar(char) {
+          const alphabetInfo = this._getAlphabet(char);
+
+          if (!alphabetInfo) {
+            return char;
+          }
+
+          const { alphabet, isUpperCase } = alphabetInfo;
+          const lowerChar = char.toLowerCase();
+          const index = alphabet.indexOf(lowerChar);
+          const newIndex =
+            (index - this.shift + alphabet.length) % alphabet.length;
+          const decryptedChar = alphabet[newIndex];
+
+          return isUpperCase ? decryptedChar.toUpperCase() : decryptedChar;
+        }
+
+        encrypt(text) {
+          return text
+            .split("")
+            .map((char) => this._encryptChar(char))
+            .join("");
+        }
+
+        decrypt(text) {
+          return text
+            .split("")
+            .map((char) => this._decryptChar(char))
+            .join("");
+        }
+
+        static bruteForce(encryptedText, language = "ru") {
+          const results = [];
+          const maxShift = language === "ru" ? 33 : 26;
+
+          for (let shift = 1; shift < maxShift; shift++) {
+            const cipher = new CaesarCipher(shift);
+            const decrypted = cipher.decrypt(encryptedText);
+            results.push({
+              shift: shift,
+              text: decrypted,
+            });
+          }
+
+          return results;
+        }
+      }
+
+      function encryptText() {
+        const shift = parseInt(document.getElementById("shift").value);
+        const text = document.getElementById("text").value;
+
+        const cipher = new CaesarCipher(shift);
+        const encrypted = cipher.encrypt(text);
+
+        document.getElementById("result").innerHTML = `
+                <strong>Зашифрованный текст:</strong><br>
+                ${encrypted}
+            `;
+      }
+
+      function decryptText() {
+        const shift = parseInt(document.getElementById("shift").value);
+        const text = document.getElementById("text").value;
+
+        const cipher = new CaesarCipher(shift);
+        const decrypted = cipher.decrypt(text);
+
+        document.getElementById("result").innerHTML = `
+                <strong>Расшифрованный текст:</strong><br>
+                ${decrypted}
+            `;
+      }
+
+      function bruteForce() {
+        const encryptedText = document.getElementById("encryptedText").value;
+        const language = document.getElementById("language").value;
+
+        const results = CaesarCipher.bruteForce(encryptedText, language);
+
+        let html = "<strong>Все возможные варианты:</strong><br><br>";
+        results.forEach((result) => {
+          html += `<strong>Сдвиг ${result.shift}:</strong> ${result.text}<br><br>`;
+        });
+
+        document.getElementById("bruteResult").innerHTML = html;
+      }
+
+      // Инициализация
+      document.addEventListener("DOMContentLoaded", () => {
+        const cipher = new CaesarCipher(3);
+        const testEncrypted = cipher.encrypt("Hello World! Привет, Мир!");
+        document.getElementById("encryptedText").value = testEncrypted;
+      });
+    </script>
+  </body>
+</html>
